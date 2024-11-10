@@ -1,0 +1,177 @@
+#!/usr/bin/env bash
+
+# Draw dashes across the screen
+borderlines() {
+  printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' -
+}
+
+# Display a message in the center of a screen
+display_center() {
+  local columns
+  columns="$(tput cols)"
+  printf "%*s\n" $(((${#1} + columns) / 2)) "$1"
+}
+
+center_bordered_text() {
+  borderlines
+  for text in "$@"; do
+    display_center "$text"
+  done
+  borderlines
+}
+
+bordered_text() {
+  borderlines
+  for text in "$@"; do
+    echo "$text"
+  done
+  borderlines
+}
+
+return_to_main_menu() {
+  center_bordered_text "Press the Spacebar to return to the Main Menu"
+  read -srd ' '
+}
+
+uptime_information() {
+  center_bordered_text "Uptime Information"
+  echo
+  display_center "Server '$(hostname)' has been $(uptime -p) and was last started up on $(uptime --since)"
+}
+
+disk_utilization() {
+  center_bordered_text "Disk Utilization"
+  echo
+  display_center "The current utilization of the disks on this server is:"
+  df -h
+}
+
+disk_mounts() {
+  center_bordered_text "Disk Mounts"
+  echo
+  display_center "Showing Disk Mounts:"
+  findmnt
+}
+
+logged_in_users() {
+  center_bordered_text "Current Logged on Users"
+  echo
+  display_center "The current logged on users are:"
+  who
+}
+
+network_details() {
+  center_bordered_text "Network Configuration Details"
+  echo
+  display_center "The current network configuration details are:"
+  ifconfig
+}
+
+verify_internet_connection() {
+  center_bordered_text "Verify Internet Connectivity"
+  echo
+  display_center "Testing external network connectivity:"
+  ping -c 5 yahoo.com
+}
+
+cpu_mem_usage() {
+  center_bordered_text "CPU and Memory Usage"
+  echo
+  display_center "The current utilization of CPU and Memory on this server is:"
+  LINES=10 top -b -n 1 -w
+}
+
+process_status() {
+  center_bordered_text "Process Status"
+  echo
+  display_center "The current running processes are:"
+  ps -eo f,uid,pid,ppid,pri,ni,vsz,rss,wchan,stat,tname,time,command
+}
+
+admin_menu() {
+  # Menu choices
+  local options
+  options=(
+    "Uptime"
+    "Disk Utilization"
+    "Disk Mounts"
+    "Current Logged on Users"
+    "Network Configuration Details"
+    "Verify Internet Connectivity"
+    "CPU & Memory Usage"
+    "Process Status"
+    "Exit Program"
+  )
+
+  # Print out the options
+  for ((i = 1; i <= ${#options[@]}; i++)); do
+    printf "  %i. %s\n" "$i" "${options[((i - 1))]}"
+  done
+
+  echo
+  bordered_text "Enter a task number (1-9) and press Enter: "
+  # Set the cursor to be at the menu string
+  tput cup 18 43
+
+  local choice
+  read -r choice
+  tput cup 20 0
+
+  clear
+  case "$choice" in
+    1) # Uptime information
+      uptime_information
+      ;;
+    2) # Disk Utilization
+      disk_utilization
+      ;;
+    3) # Disk Mounts
+      disk_mounts
+      ;;
+    4) # Current Logged on Users
+      logged_in_users
+      ;;
+    5) # Network Configuration Details
+      network_details
+      ;;
+    6) # Verify Internet Connectivity
+      verify_internet_connection
+      ;;
+    7) # CPU & Memory Usage
+      cpu_mem_usage
+      ;;
+    8) # Process Status
+      process_status
+      ;;
+    9) # Exit the program
+      exit
+      ;;
+    *)
+      echo "That is not a valid command!"
+      ;;
+  esac
+
+  echo
+  # Return to main menu after choice executes
+  return_to_main_menu
+}
+
+start_header() {
+  center_bordered_text "Administrator Tools Console" "(logged in as: $(whoami) on server '$(hostname)')"
+
+  echo
+  display_center "MAIN MENU"
+  echo
+}
+
+main() {
+  # Keep looping until we exit
+  while true; do
+    # Clear the screen first
+    clear
+    start_header
+    admin_menu
+  done
+}
+
+main
